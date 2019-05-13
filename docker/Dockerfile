@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Download the code
 ## Option 1: Download only this Dockerfile and uncomment the following line.
-RUN git clone https://github.com/JianchaoTan/fastLayerDecomposition
+RUN git clone https://github.com/CraGL/fastLayerDecomposition
 ## Option 2: Download the code locally, move the Dockerfile to the root of the repository
 ## and uncomment this COPY line. Comment-out the 'RUN git clone' line.
 ## This will allow you to edit the code and re-build the image without pushing
