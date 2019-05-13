@@ -11,10 +11,22 @@ sys.path.insert(0, _parent_dir)
 
 import Additive_mixing_layers_extraction
 Additive_mixing_layers_extraction.DEMO=True
-import pyopencl_example
 import RGBXY_method
 
 from scipy.spatial import ConvexHull
+
+## A flag for using OpenCL.
+## In particular for Docker, pocl doesn't implement something we need,
+## so let's not install it in Docker and instead run without OpenCL.
+## When using pocl, I get:
+##     Device side queue is unimplemented (clCreateCommandQueueWithProperties.c:93)
+USE_OPENCL = False
+try:
+    import pyopencl_example
+    if len( pyopencl_example.cl.get_platforms() ) > 0:
+        USE_OPENCL = True
+except: pass
+print( "Using OpenCL:", USE_OPENCL )
 
 async def layer_server( websocket, path ):
     the_image = None
@@ -86,12 +98,17 @@ async def layer_server( websocket, path ):
             w_rgb=Additive_mixing_layers_extraction.Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinates(img_data, palette, "None", order=0)
 
             w_rgb=w_rgb.reshape((-1,num_layers))
-            w_rgbxy_values=RGBXY_mixing_weights.data
-            w_rgbxy_values=w_rgbxy_values.reshape((-1,6))
-            w_rgbxy_indices=RGBXY_mixing_weights.indices.reshape((-1,6))
             
-            mult, _ = pyopencl_example.prepare_openCL_multiplication( w_rgb, w_rgbxy_values, w_rgbxy_indices )
-            final_mixing_weights=mult(w_rgb)
+            if USE_OPENCL:
+                w_rgbxy_values=RGBXY_mixing_weights.data
+                w_rgbxy_values=w_rgbxy_values.reshape((-1,6))
+                w_rgbxy_indices=RGBXY_mixing_weights.indices.reshape((-1,6))
+                
+                mult, _ = pyopencl_example.prepare_openCL_multiplication( w_rgb, w_rgbxy_values, w_rgbxy_indices )
+                final_mixing_weights=mult(w_rgb)
+            else:
+                final_mixing_weights = RGBXY_mixing_weights.dot( w_rgb )
+            
             layers=final_mixing_weights.reshape((the_image.shape[0], the_image.shape[1], num_layers))
             print (layers.shape)
             ## Send data back.
@@ -173,6 +190,6 @@ args = parser.parse_args()
 port_websocket = args.port
 
 print("WebSocket server on port", port_websocket )
-start_server = websockets.serve( layer_server, 'localhost', port_websocket, max_size = None )
+start_server = websockets.serve( layer_server, '0.0.0.0', port_websocket, max_size = None )
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

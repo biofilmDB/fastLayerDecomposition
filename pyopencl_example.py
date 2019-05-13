@@ -41,9 +41,9 @@ def prepare_openCL_multiplication( w_rgb, w_rgbxy_values, w_rgbxy_indices ):
         platform = cl.get_platforms()
         if device == 'gpu':
             my_gpu_devices = platform[0].get_devices(device_type=cl.device_type.GPU)
-        elif device == 'cpu':
+        if device == 'cpu' or len(my_gpu_devices) == 0:
             my_gpu_devices = platform[0].get_devices(device_type=cl.device_type.CPU)
-        else:
+        if len(my_gpu_devices) == 0:
             raise RuntimeError( "Unknown device: %s" % device )
         print( my_gpu_devices )
         ctx = cl.Context(devices=my_gpu_devices)
