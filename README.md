@@ -9,14 +9,14 @@ A different and simpler prototype implementation can be found in [this link](htt
 ### Launching the GUI:
 
 The GUI runs in the browser at: http://localhost:8000/
-Before that will work, you need to run a server.
+For that to work, you need to run a server.
 
-You can run the GUI via Docker (no need to install any dependencies on your machine). You won't get an OpenCL implementation of the layer updating, but it is still quite fast.
+You can run the server via Docker (no need to install any dependencies on your machine). You won't get an OpenCL implementation of the layer updating, but it is still quite fast.
 
     docker pull cragl/fastlayers
     docker run -p 8000:8000 -p 9988:9988 cragl/fastlayers
 
-If you install all the dependencies (see below), you can run:
+If you install all the dependencies (see below), you can run without Docker:
 
     cd image-layer-updating-GUI
     ./runboth.sh
