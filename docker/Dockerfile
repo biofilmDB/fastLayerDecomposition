@@ -2,11 +2,11 @@
 FROM python:3.7
 
 # Install git and GLPK, which are outside of Python requirements.txt
-RUN apt-get update && apt-get install -y git libglpk-dev
+RUN apt-get update && apt-get install -y libglpk-dev
 # Also install a CPU OpenCL implementation.
 # UPDATE: pocl-opencl-icd doesn't implement enough of OpenCL. I get the error:
 ##        Device side queue is unimplemented (clCreateCommandQueueWithProperties.c:93)
-# RUN apt-get update && apt-get install -y git libglpk-dev pocl-opencl-icd
+# RUN apt-get update && apt-get install -y libglpk-dev pocl-opencl-icd
 
 # Set the working directory to /app
 WORKDIR /app
