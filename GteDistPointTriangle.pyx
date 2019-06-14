@@ -1,3 +1,4 @@
+# cython: language_level=2
 '''
 Ported from: http://www.geometrictools.com/GTEngine/Include/GteDistPointTriangle.h
 '''
