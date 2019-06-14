@@ -11,14 +11,8 @@ RUN apt-get update && apt-get install -y git libglpk-dev
 # Set the working directory to /app
 WORKDIR /app
 
-# Download the code
-## Option 1: Download only this Dockerfile and uncomment the following line.
-RUN git clone https://github.com/CraGL/fastLayerDecomposition
-## Option 2: Download the code locally, move the Dockerfile to the root of the repository
-## and uncomment this COPY line. Comment-out the 'RUN git clone' line.
-## This will allow you to edit the code and re-build the image without pushing
-## code to github.
-# COPY . /app/fastLayerDecomposition/
+# Copy the code
+COPY . /app/fastLayerDecomposition/
 
 WORKDIR /app/fastLayerDecomposition
 
@@ -39,7 +33,7 @@ EXPOSE 8000
 CMD sh runboth.sh
 
 ## Create fastlayer image by running the following next to the Dockerfile:
-# docker build -t fastlayer .
+# docker build -t fastlayer https://github.com/CraGL/fastLayerDecomposition
 ## Run fastlayer with:
 # docker run -p 8000:8000 -p 9988:9988 --rm -it fastlayer
 ## Open your web browser to: http://localhost:8000/
