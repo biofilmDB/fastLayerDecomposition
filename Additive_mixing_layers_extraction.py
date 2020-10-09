@@ -185,12 +185,6 @@ def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, e
             chs.write_convexhull_into_obj_file(hull, output_rawhull_obj_file)
             print("Simplified hull (before clipping into 0, 1 RGB cube):")
             print(hull.points[hull.vertices])
-            # assert that 0, 0, 0, is in clipped hull
-            assert np.isin(
-                hull.points[hull.vertices].clip(0.0, 1.0),
-                [0, 0, 0])\
-                .all(1).any()
-
             return hull.points[ hull.vertices ].clip(0.0,1.0)
 
 
@@ -199,17 +193,13 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
     # Load points
     points = Hull_vertices
     print("Computing ASAP weights using the delaunay triangulation in 5D")
-    print("hull verts shape =", points.shape)
-    print("hull verts is", points)
     # Load targets
     targets = data
-    print("data.shape=", data.shape)
     ntargets = len(targets)
 
     start=time.time()
     # Compute Delaunay triangulation of points.
     tri = Delaunay(points)
-    print("Computed Delauanay triangulation of convex hull in 5D")
 
     end1=time.time()
 
@@ -219,7 +209,6 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
 
     # Affine transformation for tetrahedron containing each target
     X = tri.transform[tetrahedra, :data.shape[1]]
-    print(X.shape)
 
     # Offset of each target from the origin of its containing tetrahedron
     Y = targets - tri.transform[tetrahedra, data.shape[1]]
@@ -228,7 +217,6 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
     # The fourth coordinate would be 1 - b.sum(axis=1), but we don't need it.
     b = np.einsum('...jk,...k->...j', X, Y)
     barycoords=np.c_[b,1-b.sum(axis=1)]
-    print(barycoords)
 
     end2=time.time()
 
