@@ -20,9 +20,9 @@ def get_snowcone_palette(pts):
     """Compute the snowcone palette from an existing palette choice by finding
     vertices visible from (-1, -1, -1)."""
     M = len(pts)
+    print("In full palette, there are {} colors".format(M))
     # we will select facets that are visible from point at the Mth index
     qhull_options = "QG" + str(M)
-    print("qhull_options is:", qhull_options)
     # add -1, -1, -1 point at Mth index
     pts = np.append(pts, [[-1, -1, -1]], axis=0)
     hull = ConvexHull(pts, qhull_options=qhull_options)
@@ -32,7 +32,6 @@ def get_snowcone_palette(pts):
     good_verts = np.unique(hull.simplices[hull.good])
     print("good verts are", good_verts)
     good_indices = np.isin(np.arange(M + 1), good_verts)
-    print("good indices are", good_indices)
     snowcone_hull = pts[good_indices]
     # plot the conv hull and the snowcone verts
     fig = plt.figure()

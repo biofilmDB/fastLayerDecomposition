@@ -139,6 +139,7 @@ def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, e
 
     max_loop=5000
     mesh=TriMesh.FromOBJ_FileName(output_rawhull_obj_file)
+    print("Simplifying convex hulll...")
     for i in range(max_loop):
         if i%10==0:
             print ("loop: ", i)
@@ -161,7 +162,7 @@ def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, e
 
             elif option=="use_quantitized_colors":
                 reconstruction_errors=outsidehull_points_distance_unique_data_version(hull.points[ hull.vertices ].clip(0.0,1.0), unique_data, pixel_counts)
-                print("Reconstruction errors:", reconstruction_errors)
+                # print("Reconstruction errors:", reconstruction_errors)
             if reconstruction_errors>error_thres:
                 print("Reached error threshold")
 
@@ -255,7 +256,7 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
 
     end3=time.time()
 
-    print (end1-start, end2-end1, end3-end2)
+    # print (end1-start, end2-end1, end3-end2)
     return weights_list
 
 
@@ -390,7 +391,6 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
                         ])
 
         pixel_index=np.array(tetra_pixel_dict[vertice_tuple])
-        print("pixel_index is", pixel_index)
         if len(pixel_index)!=0:
             arr=unique_image_label[pixel_index]
             Y=recover_ASAP_weights_using_scipy_delaunay(colors, arr)
