@@ -121,7 +121,9 @@ def get_unique_colors_and_their_counts(arr):
 def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, error_thres=2.0/255.0, SAVE=True, option="use_quantitized_colors"):
 #     hull=ConvexHull(data.reshape((-1,3)), qhull_options="Qs")
     hull=ConvexHull(data.reshape((-1,3)))
-    origin_vertices=hull.points[ hull.vertices ]
+    origin_vertices=hull.points[ hull.vertices ]  # origin as in "original"
+    zero_in_og = np.isin(origin_vertices, [0, 0, 0]).all(1).any()
+    print("0, 0, 0 in original hull vertices?", zero_in_og)
     print ("original hull vertices number: ", len(hull.vertices))
     # with open( output_prefix+"-original_hull_vertices.js", 'w' ) as myfile:
     #     json.dump({'vs': (hull.points[ hull.vertices ].clip(0.0,1.0)*255).tolist(),'faces': (hull.points[ hull.simplices ].clip(0.0,1.0)*255).tolist()}, myfile, indent = 4 )
@@ -145,7 +147,6 @@ def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, e
         mesh=chs.remove_one_edge_by_finding_smallest_adding_volume_with_test_conditions(mesh,option=2)
         hull=ConvexHull(mesh.vs)
         # chs.write_convexhull_into_obj_file(hull, output_rawhull_obj_file)
-
         # after we get down to 10 vertices, check stopping conditions
         if len(hull.vertices) <= 10:
 
@@ -182,6 +183,14 @@ def Hull_Simplification_determined_version(data, output_prefix, num_thres=0.1, e
                     json.dump({'vs': (hull.points[ hull.vertices ].clip(0.0,1.0)*255).tolist(),'faces': (hull.points[ hull.simplices ].clip(0.0,1.0)*255).tolist()}, myfile, indent = 4 )
 
             chs.write_convexhull_into_obj_file(hull, output_rawhull_obj_file)
+            print("Simplified hull (before clipping into 0, 1 RGB cube):")
+            print(hull.points[hull.vertices])
+            # assert that 0, 0, 0, is in clipped hull
+            assert np.isin(
+                hull.points[hull.vertices].clip(0.0, 1.0),
+                [0, 0, 0])\
+                .all(1).any()
+
             return hull.points[ hull.vertices ].clip(0.0,1.0)
 
 

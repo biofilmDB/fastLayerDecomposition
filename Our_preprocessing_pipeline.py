@@ -12,7 +12,43 @@ import PIL.Image as Image
 import json
 import glob
 import os
+import matplotlib.pyplot as plt
 Additive_mixing_layers_extraction.DEMO = True
+
+
+def get_snowcone_palette(pts):
+    """Compute the snowcone palette from an existing palette choice by finding
+    vertices visible from (-1, -1, -1)."""
+    M = len(pts)
+    # we will select facets that are visible from point at the Mth index
+    qhull_options = "QG" + str(M)
+    print("qhull_options is:", qhull_options)
+    # add -1, -1, -1 point at Mth index
+    pts = np.append(pts, [[-1, -1, -1]], axis=0)
+    hull = ConvexHull(pts, qhull_options=qhull_options)
+    good_simps = hull.simplices[hull.good]
+    print("good simps:")
+    print(good_simps)
+    good_verts = np.unique(hull.simplices[hull.good])
+    print("good verts are", good_verts)
+    good_indices = np.isin(np.arange(M + 1), good_verts)
+    print("good indices are", good_indices)
+    snowcone_hull = pts[good_indices]
+    # plot the conv hull and the snowcone verts
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    # Plot defining corner points
+    ax.plot(pts.T[0], pts.T[1], pts.T[2], "ko")
+    # Plot good verts in green
+    ax.plot(snowcone_hull.T[0], snowcone_hull.T[1], snowcone_hull.T[2], "go")
+
+    for s in hull.simplices:
+        s = np.append(s, s[0])  # Here we cycle back to the first coordinate
+        ax.plot(pts[s, 0], pts[s, 1], pts[s, 2], "r-")
+
+    fig.savefig("test/conv_hull.pdf")
+
+    return snowcone_hull
 
 
 def save_weights(img, palette_rgb, mixing_weights, output_prefix):
@@ -83,16 +119,14 @@ for filepath in filepaths:
     # get palette
 
     start = time.time()
-    # inputs: image, output filename
     palette_rgb = Additive_mixing_layers_extraction.\
         Hull_Simplification_determined_version(
-            img, filepath[:-4]+"-convexhull_vertices")
-    palette_rgb_255 = palette_rgb*255
+            img,  # input data
+            filepath[:-4]+"-convexhull_vertices"  # filepath to write
+        )
+    palette_rgb = get_snowcone_palette(palette_rgb)
     end = time.time()
     M = len(palette_rgb)
-    print("palette_rbg = ", palette_rgb)
-    print("palette_rgb_255 = ")
-    print(palette_rgb_255)
     print("palette size: ", M)
     print("palette extraction time: ", end-start)
 
