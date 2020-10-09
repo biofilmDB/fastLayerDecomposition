@@ -75,10 +75,16 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
         json.dump({'weights': mixing_weights.tolist()}, myfile)
 
     for i in range(mixing_weights.shape[-1]):
+        print("Creating layer {}".format(i))
         mixing_weights_map_filename =\
             layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
             "-mixing_weights-%02d.png" % i
-        Image.fromarray((mixing_weights[:, :, i]*255).round().clip(0, 255).
+        this_layer_mw = mixing_weights[:, :, i]
+        print("palette_rgb[i] shape:", palette_rgb[i].shape)
+        mw = np.repeat(this_layer_mw[:, :, np.newaxis], 3, axis=2)
+        print("mw shape:", mw.shape)
+        Image.fromarray((mw*palette_rgb[i]*255).
+                        round().clip(0, 255).
                         astype(np.uint8)).save(mixing_weights_map_filename)
     return rmse
 
@@ -89,6 +95,7 @@ def get_bigger_palette_to_show(palette):
     palette2 = np.ones((1*c, len(palette)*c, 3))
     for i in range(len(palette)):
         palette2[:, i*c:i*c+c, :] = palette[i, :].reshape((1, 1, -1))
+    print("palette2 shape:", palette2.shape)
     return palette2
 
 
@@ -130,7 +137,8 @@ for filepath in filepaths:
     print("palette extraction time: ", end-start)
 
     palette_img = get_bigger_palette_to_show(palette_rgb)
-    # Image.fromarray((palette_img*255).round().astype(np.uint8)).save(filepath[:-4]+"-convexhull_vertices.png")
+    Image.fromarray((palette_img*255).round().astype(np.uint8)).\
+        save(filepath[:-4]+"-convexhull_vertices.pdf")
 
     # get layer decomposition
 
