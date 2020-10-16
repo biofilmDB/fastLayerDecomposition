@@ -31,7 +31,6 @@ def get_snowcone_palette(pts):
     pts = np.append(pts, [[-1, -1, -1]], axis=0)
     qhull_options = "QG" + str(M)
     hull = ConvexHull(pts, qhull_options=qhull_options)
-    good_simps = hull.simplices[hull.good]
     good_verts = np.unique(hull.simplices[hull.good])
     good_indices = np.isin(np.arange(M + 1), good_verts)
     if added_zero:
@@ -52,6 +51,18 @@ def get_snowcone_palette(pts):
 
     conv_hull_filepath = filepath[:-4]+"-convhull_plot.pdf"
     fig.savefig(conv_hull_filepath)
+
+    # extend snowcone verts to the boundary of the rgb cube
+    for i in range(len(snowcone_hull)):
+        pt = snowcone_hull[i]
+        # multiply each point by inverse of its max coordinate
+        c = 1/max(pt)
+        snowcone_hull[i] = c * pt
+    # Plot extended hull in blue
+    ax.plot(snowcone_hull.T[0], snowcone_hull.T[1], snowcone_hull.T[2], "bo")
+
+    snowcone_hull_filepath = filepath[:-4]+"-snowcone_plot.pdf"
+    fig.savefig(snowcone_hull_filepath)
 
     return snowcone_hull
 
