@@ -193,7 +193,7 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
     ###modified from https://codereview.stackexchange.com/questions/41024/faster-computation-of-barycentric-coordinates-for-many-points (Gareth Rees)
     # Load points
     points = Hull_vertices
-    print("Computing ASAP weights using the delaunay triangulation in 5D")
+    # print("Computing ASAP weights using the delaunay triangulation in 5D")
     # Load targets
     targets = data
     ntargets = len(targets)
@@ -379,7 +379,7 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
     unique_weights_list=np.zeros((unique_image_label.shape[0],len(tetra_prime)))
 
     for vertice_tuple in tetra_pixel_dict:
-        print("vertice_tuple is", vertice_tuple)
+        # print("vertice_tuple is", vertice_tuple)
         vertice_index_inglobalorder=np.asarray(shortest_path_order)[np.asarray(sorted(list(shortest_path_order).index(s) for s in vertice_tuple))]
         vertice_index_inglobalorder_tuple=tuple(list(vertice_index_inglobalorder))
         # print vertice_index_inglobalorder_tuple
