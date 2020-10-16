@@ -17,14 +17,18 @@ Additive_mixing_layers_extraction.DEMO = True
 
 
 def get_snowcone_palette(pts):
-    """Compute the snowcone palette from an existing palette choice by finding
-    vertices visible from (-1, -1, -1)."""
+    """Compute the snowcone palette from an existing palette choice."""
     M = len(pts)
     print("In full palette, there are {} colors".format(M))
-    # we will select facets that are visible from point at the Mth index
-    qhull_options = "QG" + str(M)
-    # add -1, -1, -1 point at Mth index
+    # add (0, 0, 0) point if needed
+    added_zero = False
+    if not np.isin(pts, [0, 0, 0]).all(1).any():
+        pts = np.append(pts, [[0, 0, 0]], axis=0)
+        M += 1
+        added_zero = True
+    # add (-1, -1, -1) point so we can look from there
     pts = np.append(pts, [[-1, -1, -1]], axis=0)
+    qhull_options = "QG" + str(M)
     hull = ConvexHull(pts, qhull_options=qhull_options)
     good_simps = hull.simplices[hull.good]
     print("good simps:")
@@ -32,6 +36,9 @@ def get_snowcone_palette(pts):
     good_verts = np.unique(hull.simplices[hull.good])
     print("good verts are", good_verts)
     good_indices = np.isin(np.arange(M + 1), good_verts)
+    if added_zero:
+        # should remove 0
+        good_indices[M] = False
     snowcone_hull = pts[good_indices]
     # plot the conv hull and the snowcone verts
     fig = plt.figure()
