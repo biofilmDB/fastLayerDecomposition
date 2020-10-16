@@ -30,25 +30,14 @@ def get_snowcone_palette(pts):
     # add (-1, -1, -1) point so we can look from there
     pts = np.append(pts, [[-1, -1, -1]], axis=0)
     qhull_options = "QG" + str(M)
-    print("qhull_options is", qhull_options)
     hull = ConvexHull(pts, qhull_options=qhull_options)
     good_simps = hull.simplices[hull.good]
-    print("good simps:")
-    print(good_simps)
     good_verts = np.unique(hull.simplices[hull.good])
-    print("good verts are", good_verts)
     good_indices = np.isin(np.arange(M + 1), good_verts)
-    print("Points is:")
-    print(pts)
-    print(added_zero)
     if added_zero:
-        print("Added zero is true")
         # should remove 0, which is at M-1 position
         good_indices[M - 1] = False
-        print("Good indices are:", good_indices)
     snowcone_hull = pts[good_indices]
-    print("snowcone hull is:")
-    print(snowcone_hull)
     # plot the conv hull and the snowcone verts
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -169,7 +158,7 @@ palette_rgb = Additive_mixing_layers_extraction.\
 palette_rgb = get_snowcone_palette(palette_rgb)
 end = time.time()
 M = len(palette_rgb)
-print("palette size: ", M)
+print("snowcone palette size: ", M)
 print("palette extraction time: ", end-start)
 
 palette_img = get_bigger_palette_to_show(palette_rgb)
