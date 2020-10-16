@@ -13,6 +13,7 @@ import PIL.Image as Image
 import json
 import glob
 import os
+import shutil
 import matplotlib.pyplot as plt
 Additive_mixing_layers_extraction.DEMO = True
 
@@ -21,21 +22,28 @@ def get_snowcone_palette(pts):
     """Compute the snowcone palette from an existing palette choice."""
     M = len(pts)
     print("In full palette, there are {} colors".format(M))
-    # add (0, 0, 0) point if needed
+    # find (0,0,0) point if it's in the data set
     added_zero = False
-    if not np.isin(pts, [0, 0, 0]).all(1).any():
-        pts = np.append(pts, [[0, 0, 0]], axis=0)
-        M += 1
+    zero_index_arr = np.where(~pts.any(axis=1))[0]
+    if zero_index_arr.size == 1:
+        zero_index = zero_index_arr[0]
+    # otherwise, add it in the last position
+    else:
         added_zero = True
-    # add (-1, -1, -1) point so we can look from there
-    pts = np.append(pts, [[-1, -1, -1]], axis=0)
-    qhull_options = "QG" + str(M)
-    hull = ConvexHull(pts, qhull_options=qhull_options)
-    good_verts = np.unique(hull.simplices[hull.good])
-    good_indices = np.isin(np.arange(M + 1), good_verts)
+        zero_index = M
+        pts = np.append(pts, [[0, 0, 0]], axis=0)
+        M = len(pts)
+    print("Zero index is: {}".format(zero_index))
+    hull = ConvexHull(pts)
+    good_indices = np.zeros((M), dtype=bool)
+    for simp in hull.simplices:
+        if np.isin(zero_index, simp):
+            for vert in simp:
+                good_indices[vert] = True
+    # remove (0,0,0) from good_indices if we added it
     if added_zero:
-        # should remove 0, which is at M-1 position
         good_indices[M - 1] = False
+    print("Good indices is", good_indices)
     snowcone_hull = pts[good_indices]
     # plot the conv hull and the snowcone verts
     fig = plt.figure()
@@ -56,7 +64,10 @@ def get_snowcone_palette(pts):
     for i in range(len(snowcone_hull)):
         pt = snowcone_hull[i]
         # multiply each point by inverse of its max coordinate
-        c = 1/max(pt)
+        if max(pt) == 0:
+            c = 1
+        else:
+            c = 1/max(pt)
         snowcone_hull[i] = c * pt
     # Plot extended hull in blue
     ax.plot(snowcone_hull.T[0], snowcone_hull.T[1], snowcone_hull.T[2], "bo")
@@ -64,12 +75,16 @@ def get_snowcone_palette(pts):
     snowcone_hull_filepath = filepath[:-4]+"-snowcone_plot.pdf"
     fig.savefig(snowcone_hull_filepath)
 
+    print("snowcone hull is:")
+    print(snowcone_hull)
+
     return snowcone_hull
 
 
 def save_weights(img, palette_rgb, mixing_weights, output_prefix):
     # redefine output prefix so that we save the outputs in a new folder
     layers_dir = "./test/layers"
+    shutil.rmtree(layers_dir)
     if not os.path.exists(layers_dir):
         os.makedirs(layers_dir)
     layer_output_prefix = layers_dir + output_prefix.split("test")[1]
@@ -91,6 +106,10 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
     with open(mixing_weights_filename, 'w') as myfile:
         json.dump({'weights': mixing_weights.tolist()}, myfile)
 
+    composed_image_filename =\
+        layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
+        "-composed.png"
+    composed_image = np.zeros(img.shape)
     for i in range(mixing_weights.shape[-1]):
         # print("Creating layer {}".format(i))
         mixing_weights_map_filename =\
@@ -99,10 +118,14 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
         this_layer_mw = mixing_weights[:, :, i]
         # print("palette_rgb[i] shape:", palette_rgb[i].shape)
         mw = np.repeat(this_layer_mw[:, :, np.newaxis], 3, axis=2)
-        # print("mw shape:", mw.shape)
+        print("mw shape:", mw.shape)
         Image.fromarray((mw*palette_rgb[i]*255).
                         round().clip(0, 255).
                         astype(np.uint8)).save(mixing_weights_map_filename)
+        composed_image += mw*palette_rgb[i]*255
+    Image.fromarray(composed_image.
+                    round().clip(0, 255).
+                    astype(np.uint8)).save(composed_image_filename)
     return rmse
 
 
@@ -134,7 +157,7 @@ def get_sphere_img():
 # Execute code
 # for testing, we'll define a sphere of points instead of reading an image from
 # file.
-from_file = False
+from_file = True
 
 base_dir = "./test/"
 if from_file:
