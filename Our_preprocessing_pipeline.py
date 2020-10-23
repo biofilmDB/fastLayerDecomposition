@@ -21,6 +21,8 @@ Additive_mixing_layers_extraction.DEMO = True
 def get_snowcone_palette(pts):
     """Compute the snowcone palette from an existing palette choice."""
     M = len(pts)
+    print("original palette is:")
+    print(pts)
     print("In full palette, there are {} colors".format(M))
     # find (0,0,0) point if it's in the data set
     added_zero = False
@@ -41,8 +43,8 @@ def get_snowcone_palette(pts):
             for vert in simp:
                 good_indices[vert] = True
     # remove (0,0,0) from good_indices if we added it
-    if added_zero:
-        good_indices[M - 1] = False
+    # if added_zero:
+    #     good_indices[M - 1] = False
     print("Good indices is", good_indices)
     snowcone_hull = pts[good_indices]
     # plot the conv hull and the snowcone verts
@@ -84,7 +86,8 @@ def get_snowcone_palette(pts):
 def save_weights(img, palette_rgb, mixing_weights, output_prefix):
     # redefine output prefix so that we save the outputs in a new folder
     layers_dir = "./test/layers"
-    shutil.rmtree(layers_dir)
+    if os.path.exists(layers_dir):
+        shutil.rmtree(layers_dir)
     if not os.path.exists(layers_dir):
         os.makedirs(layers_dir)
     layer_output_prefix = layers_dir + output_prefix.split("test")[1]
