@@ -16,6 +16,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 Additive_mixing_layers_extraction.DEMO = True
+np.set_printoptions(precision=3, suppress=True)
 
 
 def get_snowcone_palette(pts):
@@ -44,9 +45,47 @@ def get_snowcone_palette(pts):
                 good_indices[vert] = True
     # remove (0,0,0) from good_indices if we added it
     # if added_zero:
-    #     good_indices[M - 1] = False
+    #    good_indices[M - 1] = False
     print("Good indices is", good_indices)
     snowcone_hull = pts[good_indices]
+    print("snowcone hull is:")
+    print(snowcone_hull)
+    # use single linkage clustering to find a hull of size k only
+    k = 4
+    from scipy.cluster.hierarchy import linkage
+    Z = linkage(snowcone_hull, "single")
+    print("Single linkage matrix is:")
+    print(Z)
+    size_of_hull = len(snowcone_hull)
+    linkage_row = 0
+    ind_to_remove = []
+    while size_of_hull > k:
+        # reduce size using single linkage clustering
+        ind1 = Z[linkage_row, 0]
+        ind2 = Z[linkage_row, 1]
+        print("indices 1 and 2 are")
+        print(ind1, ind2)
+        if ind1 < len(snowcone_hull) and \
+                np.any(snowcone_hull[int(ind1)] != 0):
+            # remove ind 1
+            ind_to_remove.append(int(ind1))
+            size_of_hull -= 1
+        elif ind2 < len(snowcone_hull) and \
+                np.any(snowcone_hull[int(ind2)] != 0):
+            # remove ind 2
+            ind_to_remove.append(int(ind2))
+            size_of_hull -= 1
+        # if neither is an original index, don't do anything
+        print("ind_to_remove is", ind_to_remove)
+        linkage_row += 1
+    ind_to_remove.sort(reverse=True)
+    print(ind_to_remove)
+    for i in ind_to_remove:
+        snowcone_hull = np.delete(snowcone_hull, i, axis=0)
+    print("after deleting, snowcone hull is:")
+    print("snowcone hull is:")
+    print(snowcone_hull)
+
     # plot the conv hull and the snowcone verts
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -76,9 +115,6 @@ def get_snowcone_palette(pts):
 
     snowcone_hull_filepath = filepath[:-4]+"-snowcone_plot.pdf"
     fig.savefig(snowcone_hull_filepath)
-
-    print("snowcone hull is:")
-    print(snowcone_hull)
 
     return snowcone_hull
 
@@ -113,11 +149,13 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
         layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
         "-composed.png"
     composed_image = np.zeros(img.shape)
+    print("mixing weights")
+    print(np.max(mixing_weights))
     for i in range(mixing_weights.shape[-1]):
         # print("Creating layer {}".format(i))
         mixing_weights_map_filename =\
             layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
-            "-mixing_weights-%02d.png" % i
+            "-mixing_weights-{}.png".format(palette_rgb[i])
         this_layer_mw = mixing_weights[:, :, i]
         # print("palette_rgb[i] shape:", palette_rgb[i].shape)
         mw = np.repeat(this_layer_mw[:, :, np.newaxis], 3, axis=2)
@@ -193,6 +231,8 @@ palette_rgb = Additive_mixing_layers_extraction.\
         filepath[:-4]+"-convexhull_vertices"  # filepath to write
     )
 palette_rgb = get_snowcone_palette(palette_rgb)
+print("palette_rbg is")
+print(palette_rgb)
 end = time.time()
 M = len(palette_rgb)
 print("snowcone palette size: ", M)
@@ -231,4 +271,6 @@ mixing_weights = mixing_weights.reshape(
     (img.shape[0], img.shape[1], -1)).clip(0, 1)
 
 output_prefix = filepath[:-4]+'-RGBXY_RGB_black_star_ASAP'
+print("palette rgb")
+print(palette_rgb)
 RMSE = save_weights(arr, palette_rgb, mixing_weights, output_prefix)
