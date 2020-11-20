@@ -25,13 +25,17 @@ def get_snowcone_palette(pts):
     print("original palette is:")
     print(pts)
     print("In full palette, there are {} colors".format(M))
-    # find (0,0,0) point if it's in the data set
-    # added_zero = False
+    # find (0,0,0) point if it's in the data set within some tolerance, but
+    # replace it with actual (0, 0, 0)
     zero_index_arr = []
+    new_pts = []
     for i, point in enumerate(pts):
-        print(point)
         if np.isclose(point, [0, 0, 0]).all():
             zero_index_arr.append(i)
+            new_pts.append([0, 0, 0])
+        else:
+            new_pts.append(point)
+    pts = np.array(new_pts)
     print("origin is at indices {}".format(zero_index_arr))
 
     if len(zero_index_arr) == 1:
@@ -40,7 +44,6 @@ def get_snowcone_palette(pts):
         raise ValueError("Multiple zeros in conv hull")
     # otherwise, add it in the last position
     else:
-        # added_zero = True
         zero_index = M
         pts = np.append(pts, [[0, 0, 0]], axis=0)
         M = len(pts)
