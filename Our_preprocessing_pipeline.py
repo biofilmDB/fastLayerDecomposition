@@ -26,19 +26,31 @@ def get_snowcone_palette(pts):
     print(pts)
     print("In full palette, there are {} colors".format(M))
     # find (0,0,0) point if it's in the data set
-    added_zero = False
-    zero_index_arr = np.where(~pts.any(axis=1))[0]
-    if zero_index_arr.size == 1:
+    # added_zero = False
+    zero_index_arr = []
+    for i, point in enumerate(pts):
+        print(point)
+        if np.isclose(point, [0, 0, 0]).all():
+            zero_index_arr.append(i)
+    print("origin is at indices {}".format(zero_index_arr))
+
+    if len(zero_index_arr) == 1:
         zero_index = zero_index_arr[0]
+    elif len(zero_index_arr) > 1:
+        raise ValueError("Multiple zeros in conv hull")
     # otherwise, add it in the last position
     else:
-        added_zero = True
+        # added_zero = True
         zero_index = M
         pts = np.append(pts, [[0, 0, 0]], axis=0)
         M = len(pts)
+    print("after possibly adding zero, palette is:")
+    print(pts)
+    print("In this palette, there are {} colors".format(M))
     print("Zero index is: {}".format(zero_index))
     hull = ConvexHull(pts)
     good_indices = np.zeros((M), dtype=bool)
+    # only keep points that touch the origin
     for simp in hull.simplices:
         if np.isin(zero_index, simp):
             for vert in simp:
