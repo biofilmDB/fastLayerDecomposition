@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
-import math
 import numpy as np
+import pandas as pd
 import time
 import Additive_mixing_layers_extraction
 from scipy.spatial import ConvexHull
@@ -19,14 +16,8 @@ Additive_mixing_layers_extraction.DEMO = True
 np.set_printoptions(precision=3, suppress=True)
 
 
-def get_snowcone_palette(pts, filepath):
-    """Compute the snowcone palette from an existing palette choice."""
-    M = len(pts)
-    print("original palette is:")
-    print(pts)
-    print("In full palette, there are {} colors".format(M))
-    # find (0,0,0) point if it's in the data set within some tolerance, but
-    # replace it with actual (0, 0, 0)
+def add_zero(pts):
+    """Add zero to set of points if it's not there."""
     zero_index_arr = []
     new_pts = []
     for i, point in enumerate(pts):
@@ -36,7 +27,6 @@ def get_snowcone_palette(pts, filepath):
         else:
             new_pts.append(point)
     pts = np.array(new_pts)
-    print("origin is at indices {}".format(zero_index_arr))
 
     if len(zero_index_arr) == 1:
         zero_index = zero_index_arr[0]
@@ -44,24 +34,28 @@ def get_snowcone_palette(pts, filepath):
         raise ValueError("Multiple zeros in conv hull")
     # otherwise, add it in the last position
     else:
-        zero_index = M
+        zero_index = len(pts)
         pts = np.append(pts, [[0, 0, 0]], axis=0)
-        M = len(pts)
-    print("after possibly adding zero, palette is:")
+    return pts, zero_index
+
+
+def get_snowcone_palette(pts, filepath):
+    """Compute the snowcone palette from an existing palette choice."""
+    print("original palette is:")
     print(pts)
-    print("In this palette, there are {} colors".format(M))
-    print("Zero index is: {}".format(zero_index))
+    print("In full palette, there are {} colors".format(len(pts)))
+    # find (0,0,0) point if it's in the data set within some tolerance, but
+    # replace it with actual (0, 0, 0)
+    pts, zero_index = add_zero(pts)
+    M = len(pts)
+    # "snowcone hull" only includes vertices on a face of the convex hull that
+    # include the origin
     hull = ConvexHull(pts)
     good_indices = np.zeros((M), dtype=bool)
-    # only keep points that touch the origin
     for simp in hull.simplices:
         if np.isin(zero_index, simp):
             for vert in simp:
                 good_indices[vert] = True
-    # remove (0,0,0) from good_indices if we added it
-    # if added_zero:
-    #    good_indices[M - 1] = False
-    print("Good indices is", good_indices)
     snowcone_hull = pts[good_indices]
     print("snowcone hull is:")
     print(snowcone_hull)
@@ -177,6 +171,9 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
                         round().clip(0, 255).
                         astype(np.uint8)).save(mixing_weights_map_filename)
         composed_image += mw*palette_rgb[i]*255
+    print("composed_image.shape:", composed_image.shape)
+    print("composed image at x=0, y=0")
+    print(composed_image[0, 0, :])
     Image.fromarray(composed_image.
                     round().clip(0, 255).
                     astype(np.uint8)).save(composed_image_filename)
@@ -193,32 +190,11 @@ def get_bigger_palette_to_show(palette):
     return palette2
 
 
-def get_sphere_img():
-    """Generate a set of points arranged in a sphere for testing algorithms."""
-    n = 6
-    radius = 0.4
-    points = np.zeros([n, n, 3])
-    for i in range(n):
-        for j in range(n):
-            theta = i * math.pi / n
-            phi = j * math.pi / n
-            points[i, j, 0] = radius * math.sin(phi) * math.cos(theta) + 0.5
-            points[i, j, 1] = radius * math.sin(phi) * math.sin(theta) + 0.5
-            points[i, j, 2] = radius * math.cos(phi) + 0.5
-    return points
-
-
 def main():
-    from_file = True
-
     base_dir = "./test/"
-    if from_file:
-        filepath = glob.glob(base_dir + "*.png")[0]
-        print(filepath)
-        img = np.asfarray(Image.open(filepath).convert('RGB'))/255.0
-    else:
-        filepath = base_dir + "sphere.png"
-        img = get_sphere_img()
+    filepath = glob.glob(base_dir + "*.png")[0]
+    print(filepath)
+    img = np.asfarray(Image.open(filepath).convert('RGB'))/255.0
 
     print("#####################")
     print(filepath)
@@ -271,14 +247,30 @@ def main():
             data_hull.points, option=3)
 
     mixing_weights = mixing_weights_2.dot(mixing_weights_1.reshape((-1, M)))
+    mixing_weights = mixing_weights.reshape(
+        (img.shape[0], img.shape[1], -1)).clip(0, 1)
     print("Mixing weights 2 shape:", mixing_weights_2.shape)
     print("Mixing weights 1 shape:", mixing_weights_1.reshape((-1, M)).shape)
+    print("MW1 at (0,0) is {}".format(mixing_weights_1.reshape((-1, M))[0]))
+    print("MW2 at (0,0):")
+    print(mixing_weights_2[0])
+    print("MW2 at (1,0) or maybe (0,1):")
+    print(mixing_weights_2[1])
+    print("Mixing weights = MW2 dot MW1 shape:", mixing_weights.shape)
+    output_prefix = filepath[:-4]
+    pd.DataFrame(mixing_weights_2).to_csv(output_prefix + "_MW2.csv")
+    print("class of MW2:", type(mixing_weights_2))
+    pd.DataFrame(mixing_weights_1.reshape((-1, M))).to_csv(
+        output_prefix + "_MW1.csv")
+
+    print("Mixing weights at x=0, y=0")
+    print(mixing_weights[0, 0, :])
+    print("sum is", sum(mixing_weights[1, 0, :]))
+    print("sum over all:")
+    print(np.sum(mixing_weights, axis=(2)))
 
     end = time.time()
     print("total time: ", end-start)
-
-    mixing_weights = mixing_weights.reshape(
-        (img.shape[0], img.shape[1], -1)).clip(0, 1)
 
     output_prefix = filepath[:-4]+'-RGBXY_RGB_black_star_ASAP'
     print("palette rgb")
