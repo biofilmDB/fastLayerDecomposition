@@ -98,7 +98,6 @@ def get_snowcone_palette(pts):
     for i in ind_to_remove:
         snowcone_hull = np.delete(snowcone_hull, i, axis=0)
     print("after deleting, snowcone hull is:")
-    print("snowcone hull is:")
     print(snowcone_hull)
 
     # plot the conv hull and the snowcone verts
@@ -164,6 +163,10 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
         layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
         "-composed.png"
     composed_image = np.zeros(img.shape)
+    red_image = np.zeros(img.shape)
+    red_image_filename =\
+        layer_output_prefix + "-palette_size-" + str(len(palette_rgb)) +\
+        "-red.png"
     print("mixing weights")
     print(np.max(mixing_weights))
     for i in range(mixing_weights.shape[-1]):
@@ -179,9 +182,15 @@ def save_weights(img, palette_rgb, mixing_weights, output_prefix):
                         round().clip(0, 255).
                         astype(np.uint8)).save(mixing_weights_map_filename)
         composed_image += mw*palette_rgb[i]*255
+        if i == 2 or i == 3:
+            print("a red layer:", palette_rgb[i])
+            red_image += mw*palette_rgb[i]*255
     Image.fromarray(composed_image.
                     round().clip(0, 255).
                     astype(np.uint8)).save(composed_image_filename)
+    Image.fromarray(red_image.
+                    round().clip(0, 255).
+                    astype(np.uint8)).save(red_image_filename)
     return rmse
 
 

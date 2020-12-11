@@ -201,6 +201,8 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
     start=time.time()
     # Compute Delaunay triangulation of points.
     tri = Delaunay(points)
+    print(tri.simplices)
+    print(targets[:3])
 
     end1=time.time()
 
@@ -282,6 +284,7 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
 
 
     tetra_prime=origin_order_tetra_prime[order]
+    print("Ordered palette:", tetra_prime)
 
     img_shape=img_label.shape
     img_label=img_label.reshape((-1,3))
@@ -290,14 +293,33 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
     hull=ConvexHull(tetra_prime)
     test_inside=Delaunay(tetra_prime)
     label=test_inside.find_simplex(img_label,tol=1e-8)
-    print("# Points not in palette:", len(label[label==-1]))
+    print("# Points not in convex hull of palette:", len(label[label==-1]))
+
+    """
+    # add (1, 1, 1) point to keep points in "ice cre
+    snowcone = np.append(tetra_prime, [[1, 1, 1]], axis=0)
+    snowcone_hull=ConvexHull(snowcone)
+    test_inside=Delaunay(snowcone)
+    label=test_inside.find_simplex(img_label,tol=1e-8)
+    print("# Points not in snowcone of palette:", len(label[label==-1]))
+    """
+    # multiply each point by 2 so that we include points in the "ice cream"
+    # part of the snowcone
+    snowcone = 2*tetra_prime
+    print("snowcone is:")
+    print(snowcone)
+    hull=ConvexHull(snowcone)
+    test_inside=Delaunay(snowcone)
+    label=test_inside.find_simplex(img_label,tol=1e-8)
+    print("# Points not in snowcone of palette:", len(label[label==-1]))
 
     ### modify img_label[] to make all points are inside the simplified convexhull
     for i in range(img_label.shape[0]):
-    #     print i
         if label[i]<0:
             dist_list=[]
             cloest_points=[]
+            # find closest point on each face of this simplex and then move
+            # point to the overall closest
             for j in range(hull.simplices.shape[0]):
                 result = DCPPointTriangle( img_label[i], hull.points[hull.simplices[j]] )
                 dist_list.append(result['distance'])
@@ -307,7 +329,7 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
             img_label[i]=cloest_points[index]
 
     ### assert
-    test_inside=Delaunay(tetra_prime)
+    test_inside=Delaunay(snowcone)
     label=test_inside.find_simplex(img_label,tol=1e-8)
     # print len(label[label==-1])
     assert(len(label[label==-1])==0)
@@ -327,7 +349,7 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
 
     unique_colors=np.array(list(colors2xy.keys()))
     unique_image_label=unique_colors.copy()
-    vertices_list=tetra_prime
+    vertices_list=snowcone
 
 
 
@@ -340,25 +362,34 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
 
     index_list=np.array(list(np.arange(len(unique_image_label))))
 
+    # consider each tetrahedron including origin
     for face_vertex_ind in hull.simplices:
         if (face_vertex_ind!=0).all():
-            # print face_vertex_ind
             i,j,k=face_vertex_ind
             tetra=np.array([vertices_list[0],vertices_list[i],vertices_list[j],vertices_list[k]])
+            print("assigning verts to this tetrahedron:")
+            print(tetra)
             try:
                 #### use try here, because sometimes the tetra is nearly flat, will cause qhull error to stop, we do not want to stop, we just skip.
     #             print (tetra)
                 test_Del=Delaunay(tetra)
-                # print len(index_list)
                 if len(index_list)!=0:
                     label=test_Del.find_simplex(unique_image_label[index_list],tol=1e-8)
+                    print("num not in simplex:")
+                    print(len([x for x in label if x == -1]))
                     chosen_index=list(index_list[label>=0])
+                    # print("chosen index is:")
+                    # print(chosen_index)
                     tetra_pixel_dict[tuple((i,j,k))]+=chosen_index
+                    # print("tetra_pixel_dict is:")
+                    # print(tetra_pixel_dict)
                     index_list=np.array(list(set(index_list)-set(chosen_index)))
+                    # print("index_list is:")
+                    # print(index_list)
             except Exception as e:
                 pass
                 # print (tetra)
-                # print (e)
+                print(e)
 
     # print index_list
     assert(len(index_list)==0)
@@ -374,15 +405,18 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
 
     ### input is like (0,1,2,3,4) then shortest_path_order is (1,2,3,4), 0th is background color, usually is white
     shortest_path_order=tuple(np.arange(len(tetra_prime))[1:])
-    # print shortest_path_order
+    print("shortest path order is")
+    print(shortest_path_order)
 
     unique_weights_list=np.zeros((unique_image_label.shape[0],len(tetra_prime)))
 
+    # process each tetrahedron
     for vertice_tuple in tetra_pixel_dict:
-        # print("vertice_tuple is", vertice_tuple)
+        print("vertice_tuple is", vertice_tuple)
         vertice_index_inglobalorder=np.asarray(shortest_path_order)[np.asarray(sorted(list(shortest_path_order).index(s) for s in vertice_tuple))]
         vertice_index_inglobalorder_tuple=tuple(list(vertice_index_inglobalorder))
-        # print vertice_index_inglobalorder_tuple
+        print("vertice index in global order tuple")
+        print(vertice_index_inglobalorder_tuple)
 
         colors=np.array([vertices_list[0],
                          vertices_list[vertice_index_inglobalorder_tuple[0]],
@@ -391,6 +425,9 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
                         ])
 
         pixel_index=np.array(tetra_pixel_dict[vertice_tuple])
+        # get ASAP weights for these pixels
+        print("colors is")
+        print(colors)
         if len(pixel_index)!=0:
             arr=unique_image_label[pixel_index]
             Y=recover_ASAP_weights_using_scipy_delaunay(colors, arr)
@@ -434,5 +471,6 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
             Image.fromarray((origin_order_mixing_weights[:,:,i]*255).round().clip(0,255).astype(uint8)).save(mixing_weights_map_filename)
 
 
+    print(origin_order_mixing_weights)
     return origin_order_mixing_weights
 
