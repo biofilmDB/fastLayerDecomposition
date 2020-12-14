@@ -254,7 +254,8 @@ def recover_ASAP_weights_using_scipy_delaunay(Hull_vertices, data, option=1):
 
         cols=tri.simplices[tetrahedra].ravel()
         vals = barycoords.ravel()
-        weights_list = scipy.sparse.coo_matrix( ( vals, ( rows, cols ) ), shape = ( len(data), len(Hull_vertices)) ).tocsr()
+        weights_list = scipy.sparse.coo_matrix((vals, (rows, cols)),
+                                               shape=(len(data), len(Hull_vertices))).tocsr()
 
     end3=time.time()
 
@@ -295,14 +296,6 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
     label=test_inside.find_simplex(img_label,tol=1e-8)
     print("# Points not in convex hull of palette:", len(label[label==-1]))
 
-    """
-    # add (1, 1, 1) point to keep points in "ice cre
-    snowcone = np.append(tetra_prime, [[1, 1, 1]], axis=0)
-    snowcone_hull=ConvexHull(snowcone)
-    test_inside=Delaunay(snowcone)
-    label=test_inside.find_simplex(img_label,tol=1e-8)
-    print("# Points not in snowcone of palette:", len(label[label==-1]))
-    """
     # multiply each point by 2 so that we include points in the "ice cream"
     # part of the snowcone
     snowcone = 2*tetra_prime
@@ -315,7 +308,9 @@ def Get_ASAP_weights_using_Tan_2016_triangulation_and_then_barycentric_coordinat
 
     ### modify img_label[] to make all points are inside the simplified convexhull
     for i in range(img_label.shape[0]):
+        print("Considering point {} ({})".format(img_label[i], 255*img_label[i]))
         if label[i]<0:
+            print("Not in snowcone!")
             dist_list=[]
             cloest_points=[]
             # find closest point on each face of this simplex and then move
