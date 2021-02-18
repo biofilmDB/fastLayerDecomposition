@@ -60,3 +60,24 @@ You can install all of the following via: `pip install -r requirements.txt`.
 * PIL or Pillow (Python Image Library) (`pip install Pillow`)
 * pyopencl
 * websockets (`pip install websockets`)
+
+## Color Extraction Package (coming soon)
+
+For Britney.
+
+There will be a `color-extraction` package that can be installed using pip. In
+a Python program, you could do
+
+```
+from color-extraction import Extractor
+
+extractor = Extractor("composite_image_file.png", k)
+extractor.extract()
+# example colors_rgb: [(0, 100, 155), (255, 0, 0), (145, 156, 0)]
+colors_rgb = extractor.get_base_colors_rgb()
+# example colors_hex: ["#FFFFFG", "#00FFGF"]
+colors_hex = extractor.get_base_colors_hex()
+# base_image_PIL is a list of k PIL objects
+base_image_PIL = extractor.get_base_images_PIL()
+extractor.save_base_images("directory_for_base_images/")
+```
