@@ -65,8 +65,14 @@ You can install all of the following via: `pip install -r requirements.txt`.
 
 For Britney.
 
-There will be a `color-extraction` package that can be installed using pip. In
-a Python program, you could do
+There will be a `color-extraction` package that can be installed using pip.
+You will be able to install it using:
+
+```
+pip install color-extraction
+```
+
+Then, in a Python program, you could do:
 
 ```
 from color_extraction import Extractor
